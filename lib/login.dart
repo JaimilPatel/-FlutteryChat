@@ -22,11 +22,28 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Login"),
+        centerTitle: true,
+        title: Text("Fluttery Chat"),
       ),
-      body: RaisedButton(
-        child: Text("Sign in With Gmail"),
-        onPressed: handleSignIn,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            IconButton(
+              icon: Icon(Icons.email),
+              iconSize: 50.0,
+              color: Colors.red,
+            ),
+            RaisedButton(
+              child: Text(
+                "Sign in With Gmail",
+                style: TextStyle(color: Colors.white, fontSize: 20.0),
+              ),
+              onPressed: handleSignIn,
+              color: Colors.red,
+            ),
+          ],
+        ),
       ),
     );
   }
