@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_chat_app/ChatsPage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -43,6 +44,12 @@ class _LoginPageState extends State<LoginPage> {
     isLoggedIn = await googleSignIn.isSignedIn();
     if (isLoggedIn) {
       preferences = await SharedPreferences.getInstance();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) =>
+                ChatsPage(currentUserId: preferences.getString('id'))),
+      );
     }
     this.setState(() {
       isLoading = false;
@@ -91,6 +98,11 @@ class _LoginPageState extends State<LoginPage> {
       this.setState(() {
         isLoading = false;
       });
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) =>
+                  ChatsPage(currentUserId: firebaseUser.uid)));
     } else {
       Fluttertoast.showToast(msg: "Failure");
       this.setState(() {
