@@ -5,33 +5,43 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_app/ChatScreen.dart';
 import 'package:flutter_chat_app/Choice.dart';
-import 'package:flutter_chat_app/login.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatsPage extends StatefulWidget {
-  final String currentUserId;
-  ChatsPage({Key key, @required this.currentUserId}) : super(key: key);
   @override
-  _ChatsPageState createState() =>
-      _ChatsPageState(currentUserId: currentUserId);
+  _ChatsPageState createState() => _ChatsPageState();
 }
 
 class _ChatsPageState extends State<ChatsPage> {
-  final String currentUserId;
+  String currentUserId;
+  String currentUserEmail;
+  String currentUserImageUrl;
+  SharedPreferences sharedPreferences;
   final FirebaseMessaging firebaseMessaging = FirebaseMessaging();
   final FlutterLocalNotificationsPlugin firebaseLocalNotificationPlugin =
       FlutterLocalNotificationsPlugin();
   final GoogleSignIn googleSignIn = GoogleSignIn();
   bool isLoading = false;
   List<Choice> choices = const <Choice>[
+    const Choice(title: 'Settings', icon: Icons.exit_to_app),
     const Choice(title: 'Log out', icon: Icons.exit_to_app),
   ];
-  _ChatsPageState({Key key, @required this.currentUserId});
 
   @override
   void initState() {
     super.initState();
+    readFromStorage();
+  }
+
+  void readFromStorage() async {
+    sharedPreferences = await SharedPreferences.getInstance();
+    currentUserId = sharedPreferences.getString('id');
+    setState(() {
+      currentUserEmail = sharedPreferences.getString('email');
+      currentUserImageUrl = sharedPreferences.getString('photoUrl');
+    });
   }
 
   void onItemMenuPress(Choice choice) {
@@ -48,11 +58,37 @@ class _ChatsPageState extends State<ChatsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'MAIN',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        leading: Padding(
+          padding: const EdgeInsets.all(5.0),
+          child: Material(
+            child: currentUserImageUrl != null
+                ? CachedNetworkImage(
+                    placeholder: (context, url) => Container(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.0,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.green),
+                        ),
+                        width: 40.0,
+                        height: 40.0),
+                    imageUrl: '$currentUserImageUrl',
+                    width: 40.0,
+                    height: 40.0,
+                    fit: BoxFit.cover,
+                  )
+                : Icon(
+                    Icons.account_circle,
+                    size: 40.0,
+                    color: Colors.grey,
+                  ),
+            borderRadius: BorderRadius.all(Radius.circular(25.0)),
+            clipBehavior: Clip.hardEdge,
+          ),
         ),
-        centerTitle: true,
+        title: Text(
+          '$currentUserEmail',
+          style: TextStyle(color: Colors.white),
+        ),
         actions: <Widget>[
           PopupMenuButton<Choice>(
             onSelected: onItemMenuPress,
@@ -141,16 +177,16 @@ class _ChatsPageState extends State<ChatsPage> {
                     children: <Widget>[
                       Container(
                         child: Text(
-                          'Nickname: ${document['nickname']}',
-                          style: TextStyle(color: Colors.blue),
+                          '${document['name']}',
+                          style: TextStyle(color: Colors.black),
                         ),
                         alignment: Alignment.centerLeft,
                         margin: EdgeInsets.fromLTRB(10.0, 0.0, 0.0, 5.0),
                       ),
                       Container(
                         child: Text(
-                          'About me: ${document['aboutMe'] ?? 'Not available'}',
-                          style: TextStyle(color: Colors.blue),
+                          '${document['email']} ',
+                          style: TextStyle(color: Colors.black),
                         ),
                         alignment: Alignment.centerLeft,
                         margin: EdgeInsets.fromLTRB(10.0, 0.0, 0.0, 0.0),
@@ -167,10 +203,11 @@ class _ChatsPageState extends State<ChatsPage> {
                 MaterialPageRoute(
                     builder: (context) => ChatScreen(
                           peerId: document.documentID,
+                          peerName: document['name'],
                           peerAvatar: document['photoUrl'],
                         )));
           },
-          color: Colors.blueGrey,
+          color: Colors.white,
           padding: EdgeInsets.fromLTRB(25.0, 10.0, 25.0, 10.0),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
@@ -181,17 +218,16 @@ class _ChatsPageState extends State<ChatsPage> {
   }
 
   Future<Null> handleLogOut() async {
-    this.setState(() {
-      isLoading = true;
-    });
+//    this.setState(() {
+//      isLoading = true;
+//    });
     await FirebaseAuth.instance.signOut();
     await googleSignIn.disconnect();
     await googleSignIn.signOut();
-    this.setState(() {
-      isLoading = false;
-    });
-    Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => LoginPage()),
-        (Route<dynamic> route) => false);
+//    this.setState(() {
+//      isLoading = false;
+//    });
+    Navigator.of(context)
+        .pushNamedAndRemoveUntil('/login', (Route<dynamic> route) => false);
   }
 }

@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_chat_app/PhotoPreview.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -11,22 +12,28 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatScreen extends StatelessWidget {
   final String peerId;
+  final String peerName;
   final String peerAvatar;
 
-  ChatScreen({Key key, @required this.peerId, @required this.peerAvatar})
+  ChatScreen(
+      {Key key,
+      @required this.peerId,
+      @required this.peerName,
+      @required this.peerAvatar})
       : super(key: key);
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
       appBar: new AppBar(
         title: new Text(
-          'CHAT',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          '$peerName',
+          style: TextStyle(color: Colors.white),
         ),
         centerTitle: true,
       ),
       body: new SingleChat(
         peerId: peerId,
+        peerName: peerName,
         peerAvatar: peerAvatar,
       ),
     );
@@ -35,8 +42,13 @@ class ChatScreen extends StatelessWidget {
 
 class SingleChat extends StatefulWidget {
   final String peerId;
+  final String peerName;
   final String peerAvatar;
-  SingleChat({Key key, @required this.peerId, @required this.peerAvatar})
+  SingleChat(
+      {Key key,
+      @required this.peerId,
+      @required this.peerName,
+      @required this.peerAvatar})
       : super(key: key);
   @override
   _SingleChatState createState() =>
@@ -105,19 +117,11 @@ class _SingleChatState extends State<SingleChat> {
         children: <Widget>[
           Column(
             children: <Widget>[
-              // List of messages
-              buildListMessage(),
-
-              // Sticker
-              (isShowSticker ? buildSticker() : Container()),
-
-              // Input content
-              buildInput(),
+              buildListofConversation(),
+              buildTextInputArea(),
             ],
           ),
-
-          // Loading
-          buildLoading()
+          //buildLoading()
         ],
       ),
       onWillPop: onBackPress,
@@ -125,24 +129,17 @@ class _SingleChatState extends State<SingleChat> {
   }
 
   Future<bool> onBackPress() {
-    if (isShowSticker) {
-      setState(() {
-        isShowSticker = false;
-      });
-    } else {
-      Firestore.instance
-          .collection('users')
-          .document(id)
-          .updateData({'chattingWith': null});
-      Navigator.pop(context);
-    }
+    Firestore.instance
+        .collection('users')
+        .document(id)
+        .updateData({'chattingWith': null});
+    Navigator.pop(context);
   }
 
-  Widget buildInput() {
+  Widget buildTextInputArea() {
     return Container(
       child: Row(
         children: <Widget>[
-          // Button send image
           Material(
             child: new Container(
               margin: new EdgeInsets.symmetric(horizontal: 1.0),
@@ -154,19 +151,6 @@ class _SingleChatState extends State<SingleChat> {
             ),
             color: Colors.white,
           ),
-          Material(
-            child: new Container(
-              margin: new EdgeInsets.symmetric(horizontal: 1.0),
-              child: new IconButton(
-                icon: new Icon(Icons.face),
-                onPressed: getSticker,
-                color: Colors.black,
-              ),
-            ),
-            color: Colors.white,
-          ),
-
-          // Edit text
           Flexible(
             child: Container(
               child: TextField(
@@ -180,8 +164,6 @@ class _SingleChatState extends State<SingleChat> {
               ),
             ),
           ),
-
-          // Button send message
           Material(
             child: new Container(
               margin: new EdgeInsets.symmetric(horizontal: 8.0),
@@ -204,7 +186,7 @@ class _SingleChatState extends State<SingleChat> {
     );
   }
 
-  Widget buildListMessage() {
+  Widget buildListofConversation() {
     return Flexible(
         child: groupChatId == ''
             ? Center(
@@ -226,11 +208,15 @@ class _SingleChatState extends State<SingleChat> {
                                 AlwaysStoppedAnimation<Color>(Colors.green)));
                   } else {
                     listMessage = snapshot.data.documents;
-                    return ListView.builder(
-                      itemCount: snapshot.data.documents.length,
-                      reverse: true,
-                      itemBuilder: (context, index) =>
-                          buildItem(index, snapshot.data.documents[index]),
+                    return Padding(
+                      padding: const EdgeInsets.only(
+                          top: 5.0, right: 5.0, left: 5.0),
+                      child: ListView.builder(
+                        itemCount: snapshot.data.documents.length,
+                        reverse: true,
+                        itemBuilder: (context, index) =>
+                            buildItem(index, snapshot.data.documents[index]),
+                      ),
                     );
                   }
                 },
@@ -273,118 +259,6 @@ class _SingleChatState extends State<SingleChat> {
     setState(() {
       isShowSticker = !isShowSticker;
     });
-  }
-
-  Widget buildSticker() {
-    return Container(
-      child: Column(
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              FlatButton(
-                onPressed: () => onSendMessage('mimi1', 2),
-                child: new Image.asset(
-                  'images/mimi1.gif',
-                  width: 50.0,
-                  height: 50.0,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              FlatButton(
-                onPressed: () => onSendMessage('mimi2', 2),
-                child: new Image.asset(
-                  'images/mimi2.gif',
-                  width: 50.0,
-                  height: 50.0,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              FlatButton(
-                onPressed: () => onSendMessage('mimi3', 2),
-                child: new Image.asset(
-                  'images/mimi3.gif',
-                  width: 50.0,
-                  height: 50.0,
-                  fit: BoxFit.cover,
-                ),
-              )
-            ],
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          ),
-          Row(
-            children: <Widget>[
-              FlatButton(
-                onPressed: () => onSendMessage('mimi4', 2),
-                child: new Image.asset(
-                  'images/mimi4.gif',
-                  width: 50.0,
-                  height: 50.0,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              FlatButton(
-                onPressed: () => onSendMessage('mimi5', 2),
-                child: new Image.asset(
-                  'images/mimi5.gif',
-                  width: 50.0,
-                  height: 50.0,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              FlatButton(
-                onPressed: () => onSendMessage('mimi6', 2),
-                child: new Image.asset(
-                  'images/mimi6.gif',
-                  width: 50.0,
-                  height: 50.0,
-                  fit: BoxFit.cover,
-                ),
-              )
-            ],
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          ),
-          Row(
-            children: <Widget>[
-              FlatButton(
-                onPressed: () => onSendMessage('mimi7', 2),
-                child: new Image.asset(
-                  'images/mimi7.gif',
-                  width: 50.0,
-                  height: 50.0,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              FlatButton(
-                onPressed: () => onSendMessage('mimi8', 2),
-                child: new Image.asset(
-                  'images/mimi8.gif',
-                  width: 50.0,
-                  height: 50.0,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              FlatButton(
-                onPressed: () => onSendMessage('mimi9', 2),
-                child: new Image.asset(
-                  'images/mimi9.gif',
-                  width: 50.0,
-                  height: 50.0,
-                  fit: BoxFit.cover,
-                ),
-              )
-            ],
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          )
-        ],
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      ),
-      decoration: new BoxDecoration(
-          border:
-              new Border(top: new BorderSide(color: Colors.blue, width: 0.5)),
-          color: Colors.white),
-      padding: EdgeInsets.all(5.0),
-      height: 180.0,
-    );
   }
 
   Widget buildLoading() {
@@ -446,7 +320,7 @@ class _SingleChatState extends State<SingleChat> {
                   padding: EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
                   width: 200.0,
                   decoration: BoxDecoration(
-                      color: Colors.blue,
+                      color: Colors.lightGreen[200],
                       borderRadius: BorderRadius.circular(8.0)),
                   margin: EdgeInsets.only(
                       bottom: isLastMessageRight(index) ? 20.0 : 10.0,
@@ -467,24 +341,24 @@ class _SingleChatState extends State<SingleChat> {
                               height: 200.0,
                               padding: EdgeInsets.all(70.0),
                               decoration: BoxDecoration(
-                                color: Colors.blue,
+                                color: Colors.lightGreen[200],
                                 borderRadius: BorderRadius.all(
                                   Radius.circular(8.0),
                                 ),
                               ),
                             ),
-                            errorWidget: (context, url, error) => Material(
-                              child: Image.asset(
-                                'images/img_not_available.jpeg',
-                                width: 200.0,
-                                height: 200.0,
-                                fit: BoxFit.cover,
-                              ),
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(8.0),
-                              ),
-                              clipBehavior: Clip.hardEdge,
-                            ),
+//                            errorWidget: (context, url, error) => Material(
+//                              child: Image.asset(
+//                                'images/img_not_available.jpeg',
+//                                width: 200.0,
+//                                height: 200.0,
+//                                fit: BoxFit.cover,
+//                              ),
+//                              borderRadius: BorderRadius.all(
+//                                Radius.circular(8.0),
+//                              ),
+//                              clipBehavior: Clip.hardEdge,
+//                            ),
                             imageUrl: document['content'],
                             width: 200.0,
                             height: 200.0,
@@ -494,8 +368,11 @@ class _SingleChatState extends State<SingleChat> {
                           clipBehavior: Clip.hardEdge,
                         ),
                         onPressed: () {
-//                Navigator.push(
-//                    context, MaterialPageRoute(builder: (context) => FullPhoto(url: document['content'])));
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => PhotoPreview(
+                                      imageUrl: document['content'])));
                         },
                         padding: EdgeInsets.all(0),
                       ),
@@ -505,16 +382,16 @@ class _SingleChatState extends State<SingleChat> {
                     )
                   // Sticker
                   : Container(
-                      child: new Image.asset(
-                        'images/${document['content']}.gif',
-                        width: 100.0,
-                        height: 100.0,
-                        fit: BoxFit.cover,
+//                      child: new Image.asset(
+//                        'images/${document['content']}.gif',
+//                        width: 100.0,
+//                        height: 100.0,
+//                        fit: BoxFit.cover,
+//                      ),
+//                      margin: EdgeInsets.only(
+//                          bottom: isLastMessageRight(index) ? 20.0 : 10.0,
+//                          right: 10.0),
                       ),
-                      margin: EdgeInsets.only(
-                          bottom: isLastMessageRight(index) ? 20.0 : 10.0,
-                          right: 10.0),
-                    ),
         ],
         mainAxisAlignment: MainAxisAlignment.end,
       );
@@ -553,12 +430,12 @@ class _SingleChatState extends State<SingleChat> {
                     ? Container(
                         child: Text(
                           document['content'],
-                          style: TextStyle(color: Colors.white),
+                          style: TextStyle(color: Colors.black),
                         ),
                         padding: EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
                         width: 200.0,
                         decoration: BoxDecoration(
-                            color: Colors.black,
+                            color: Colors.blueGrey[100],
                             borderRadius: BorderRadius.circular(8.0)),
                         margin: EdgeInsets.only(left: 10.0),
                       )
@@ -576,25 +453,25 @@ class _SingleChatState extends State<SingleChat> {
                                     height: 200.0,
                                     padding: EdgeInsets.all(70.0),
                                     decoration: BoxDecoration(
-                                      color: Colors.blue,
+                                      color: Colors.blueGrey[100],
                                       borderRadius: BorderRadius.all(
                                         Radius.circular(8.0),
                                       ),
                                     ),
                                   ),
-                                  errorWidget: (context, url, error) =>
-                                      Material(
-                                    child: Image.asset(
-                                      'images/img_not_available.jpeg',
-                                      width: 200.0,
-                                      height: 200.0,
-                                      fit: BoxFit.cover,
-                                    ),
-                                    borderRadius: BorderRadius.all(
-                                      Radius.circular(8.0),
-                                    ),
-                                    clipBehavior: Clip.hardEdge,
-                                  ),
+//                                  errorWidget: (context, url, error) =>
+//                                      Material(
+//                                    child: Image.asset(
+//                                      'images/img_not_available.jpeg',
+//                                      width: 200.0,
+//                                      height: 200.0,
+//                                      fit: BoxFit.cover,
+//                                    ),
+//                                    borderRadius: BorderRadius.all(
+//                                      Radius.circular(8.0),
+//                                    ),
+//                                    clipBehavior: Clip.hardEdge,
+//                                  ),
                                   imageUrl: document['content'],
                                   width: 200.0,
                                   height: 200.0,
@@ -605,24 +482,27 @@ class _SingleChatState extends State<SingleChat> {
                                 clipBehavior: Clip.hardEdge,
                               ),
                               onPressed: () {
-//                      Navigator.push(context,
-//                          MaterialPageRoute(builder: (context) => FullPhoto(url: document['content'])));
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => PhotoPreview(
+                                            imageUrl: document['content'])));
                               },
                               padding: EdgeInsets.all(0),
                             ),
                             margin: EdgeInsets.only(left: 10.0),
                           )
                         : Container(
-                            child: new Image.asset(
-                              'images/${document['content']}.gif',
-                              width: 100.0,
-                              height: 100.0,
-                              fit: BoxFit.cover,
+//                            child: new Image.asset(
+//                              'images/${document['content']}.gif',
+//                              width: 100.0,
+//                              height: 100.0,
+//                              fit: BoxFit.cover,
+//                            ),
+//                            margin: EdgeInsets.only(
+//                                bottom: isLastMessageRight(index) ? 20.0 : 10.0,
+//                                right: 10.0),
                             ),
-                            margin: EdgeInsets.only(
-                                bottom: isLastMessageRight(index) ? 20.0 : 10.0,
-                                right: 10.0),
-                          ),
               ],
             ),
 
